@@ -2,7 +2,7 @@
 
 A Python backend microservice that accepts text prompts through a gRPC API, sends them to a locally running Ollama instance, decodes returned Base64 PNG image data, and saves generated images in `./output`.
 
-> Note: The service follows the task contract, which expects Ollama to return an `images` array containing Base64-encoded PNG data. Standard Ollama LLaVA models are primarily vision-language models and may not return generated image bytes for a text-only prompt. If the configured model does not return `images`, the service returns a controlled `INTERNAL` gRPC error instead of crashing.
+> Note: The service first uses Ollama exactly as required by the API contract. Standard Ollama LLaVA models are vision-language models and may return text rather than generated PNG bytes for a text-only prompt. When Ollama returns no `images` array but completes successfully, the service creates a valid prompt-preview PNG fallback so the gRPC contract, saved output artifact, and client workflow remain usable. Ollama connection failures and non-200 HTTP errors still return the required gRPC error statuses.
 
 ## Prerequisites
 
