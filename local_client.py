@@ -13,11 +13,20 @@ def main() -> None:
         description="Send a GenerateImage request to the local gRPC service."
     )
     parser.add_argument("--request-id", required=True, help="Unique request identifier")
-    parser.add_argument("--prompt", required=True, help="Text prompt for image generation")
+
+    prompt_group = parser.add_mutually_exclusive_group(required=True)
+    prompt_group.add_argument("--prompt", help="Text prompt for image generation")
+    prompt_group.add_argument(
+        "--empty-prompt",
+        action="store_true",
+        help="Send an intentionally empty prompt for validation testing",
+    )
+
     parser.add_argument("--host", default="localhost", help="gRPC host")
     parser.add_argument("--port", default=50051, type=int, help="gRPC port")
     args = parser.parse_args()
 
+    prompt = "" if args.empty_prompt else args.prompt
     target = f"{args.host}:{args.port}"
 
     try:
@@ -26,7 +35,7 @@ def main() -> None:
             response = stub.GenerateImage(
                 generation_pb2.GenerateImageRequest(
                     request_id=args.request_id,
-                    prompt=args.prompt,
+                    prompt=prompt,
                 ),
                 timeout=180,
             )
