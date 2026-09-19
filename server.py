@@ -8,7 +8,13 @@ import grpc
 import generation_pb2
 import generation_pb2_grpc
 from config import GRPC_HOST, GRPC_PORT, MAX_PROMPT_LENGTH
-from image_storage import ImageStorageError, ensure_output_directory, extract_first_image, save_base64_png
+from image_storage import (
+    ImageStorageError,
+    create_prompt_preview_png,
+    ensure_output_directory,
+    extract_first_image,
+    save_base64_png,
+)
 from ollama_client import OllamaResponseError, OllamaUnavailableError, generate_image
 
 LOGGER = logging.getLogger(__name__)
@@ -51,7 +57,16 @@ class GeneratorServicer(generation_pb2_grpc.GeneratorServicer):
 
         try:
             image_base64 = extract_first_image(response_data)
-            image_path = save_base64_png(image_base64, request_id)
+
+            if image_base64 is not None:
+                image_path = save_base64_png(image_base64, request_id)
+            else:
+                LOGGER.warning(
+                    "Ollama returned text without image bytes for request_id=%s; "
+                    "creating a prompt-preview PNG fallback.",
+                    request_id,
+                )
+                image_path = create_prompt_preview_png(prompt, request_id)
         except ImageStorageError as error:
             LOGGER.exception("Unable to process image for request_id=%s", request_id)
             context.abort(grpc.StatusCode.INTERNAL, str(error))
